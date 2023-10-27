@@ -1,87 +1,59 @@
-import os
-
-main_path = 'd:\\down'
-
-# key names will be folder names!
-extensions = {
-
-    'video': ['mp4', 'mov', 'avi', 'mkv', 'wmv', '3gp', '3g2', 'mpg', 'mpeg', 'm4v', 'h264', 'flv',
-              'rm', 'swf', 'vob'],
-
-    'data': ['sql', 'sqlite', 'sqlite3', 'csv', 'dat', 'db', 'log', 'mdb', 'sav', 'tar', 'xml'],
-
-    'audio': ['mp3', 'wav', 'ogg', 'flac', 'aif', 'mid', 'midi', 'mpa', 'wma', 'wpl', 'cda'],
-
-    'image': ['jpg', 'png', 'bmp', 'ai', 'psd', 'ico', 'jpeg', 'ps', 'svg', 'tif', 'tiff'],
-
-    'archive': ['zip', 'rar', '7z', 'z', 'gz', 'rpm', 'arj', 'pkg', 'deb'],
-
-    'text': ['pdf', 'txt', 'doc', 'docx', 'rtf', 'tex', 'wpd', 'odt'],
-
-    '3d': ['stl', 'obj', 'fbx', 'dae', '3ds', 'iges', 'step'],
-
-    'presentation': ['pptx', 'ppt', 'pps', 'key', 'odp'],
-
-    'spreadsheet': ['xlsx', 'xls', 'xlsm', 'ods'],
-
-    'font': ['otf', 'ttf', 'fon', 'fnt'],
-
-    'gif': ['gif'],
-
-    'exe': ['exe'],
-
-    'bat': ['bat'],
-
-    'apk': ['apk']
+import sys
+from pathlib import Path
+JPEG_IMAGES = []
+JPG_IMAGES = []
+PNG_IMAGES = []
+SVG_IMAGES = []
+MP3_AUDIO = []
+MY_OTHER = []
+ARCHIVES = []
+​
+REGISTER_EXTENSION = {
+    'JPEG': JPEG_IMAGES,
+    'JPG': JPG_IMAGES,
+    'PNG': PNG_IMAGES,
+    'SVG': SVG_IMAGES,
+    'MP3': MP3_AUDIO,
+    'ZIP': ARCHIVES,
 }
 
+FOLDERS = []
+EXTENSIONS = set()
+UNKNOWN = set()
 
-# also creates folders from dictionary keys
-def create_folders_from_list(folder_path, folder_names):
-    for folder in folder_names:
-        if not os.path.exists(f'{folder_path}\\{folder}'):
-            os.mkdir(f'{folder_path}\\{folder}')
-
-
-def get_subfolder_paths(folder_path) -> list:
-    subfolder_paths = [f.path for f in os.scandir(folder_path) if f.is_dir()]
-
-    return subfolder_paths
-
-
-def get_file_paths(folder_path) -> list:
-    file_paths = [f.path for f in os.scandir(folder_path) if not f.is_dir()]
-
-    return file_paths
-
-
-def sort_files(folder_path):
-    file_paths = get_file_paths(folder_path)
-    ext_list = list(extensions.items())
-
-    for file_path in file_paths:
-        extension = file_path.split('.')[-1]
-        file_name = file_path.split('\\')[-1]
-
-        for dict_key_int in range(len(ext_list)):
-            if extension in ext_list[dict_key_int][1]:
-                print(f'Moving {file_name} in {ext_list[dict_key_int][0]} folder\n')
-                os.rename(file_path, f'{main_path}\\{ext_list[dict_key_int][0]}\\{file_name}')
-
-
-def remove_empty_folders(folder_path):
-    subfolder_paths = get_subfolder_paths(folder_path)
-
-    for p in subfolder_paths:
-        if not os.listdir(p):
-            print('Deleting empty folder:', p.split('\\')[-1], '\n')
-            os.rmdir(p)
-
-
-if __name__ == "__main__":
-    create_folders_from_list(main_path, extensions)
-    sort_files(main_path)
-    remove_empty_folders(main_path)
-    logging.basicConfig(level=logging.INFO)
-    path_to_folder = 'from'
-    main(path_to_foloder)
+def get_extension(name: str) -> str:
+    return Path(name).suffix[1:].upper()  # suffix[1:] -> .jpg -> jpg
+def scan(folder: Path):
+    for item in folder.iterdir():
+        # Робота з папкою
+        if item.is_dir():  # перевіряємо чи обєкт папка
+            if item.name not in ('archives', 'video', 'audio', 'documents', 'images', 'MY_OTHER'):
+                FOLDERS.append(item)
+                scan(item)
+            continue
+​
+        # Робота з файлом
+        extension = get_extension(item.name)  # беремо розширення файлу
+        full_name = folder / item.name  # беремо повний шлях до файлу
+        if not extension:
+            MY_OTHER.append(full_name)
+        else:
+            try:
+                REGISTER_EXTENSION[extension]
+                EXTENSIONS.add(extension)
+            except KeyError:
+                UNKNOWN.add(extension)  # .mp4, .mov, .avi
+                MY_OTHER.append(full_name)
+ 
+if __name__ == '__main__':
+    folder_process = sys.argv[1]
+    scan(Path(folder_process))
+    print(f'Images jpeg: {JPEG_IMAGES}')
+    print(f'Images jpg: {JPG_IMAGES}')
+    print(f'Images png: {PNG_IMAGES}')
+    print(f'AUDIO mp3: {MP3_AUDIO}')
+    print(f'Archives zip: {ARCHIVES}')
+​
+    print(f'EXTENSIONS: {EXTENSIONS}')
+    print(f'UNKNOWN: {UNKNOWN}')
+​
